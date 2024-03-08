@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Build image container application
+
+Parameters: 
+  AwsRegion:
+    Type: String
+    Description: Region AWS
+    Default: us-east-1
+  GitHubToken: 
+    Type: String
+    Description: Auth GitHub 
+    Default: "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"
+  RepositoryECR:
+    Type: String
+    Description: Repository image ECR
+    Default: "881406367037.dkr.ecr.us-east-1.amazonaws.com/api"
+  DockerFilePath:
+    Type: String
+    Description: Dockerfile Path
+    Default: "application/api/Dockerfile"
+
+Resources:
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: GitHubBuildImageAPI
+      Description: API image build 
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Source:
+        Type: GITHUB 
+        Location: https://github.com/cmickelle/provisionamento-aws
+        Auth:
+          Type: OAUTH
+          Resource: !Ref GitHubToken
+        GitCloneDepth: 1
+        BuildSpec: | 
+
+          version: 0.2
+          phases: 
+            pre_build:
+              commands:
+                - echo Login AWS ECR...
+                - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --password-stdin --username AWS "$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+            build:
+              commands:
+                - echo Build start `date`
+                - docker build -t $REPOSITORY_URL_ECR:latest -f $DOCKER_FILE_PATH .
+                - echo Build end `date`
+                - echo Send image to ECR... 
+                - docker push $REPOSITORY_URL_ECR:latest
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment: 
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:5.0
+        EnvironmentVariables:
+          - Name: $AWS_DEFAULT_REGION
+            Value: !Ref AwsRegion
+          - Name: $REPOSITORY_URL_ECR
+            Value: !Ref RepositoryECR
+          - Name: $DOCKER_FILE_PATH
+            Value: !Ref DockerFilePath
+  
+  CodeBuildServiceRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: codebuild.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: CodeBuildPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action: '*'
+                  Resource: '*'
+
+Outputs:
+  CodeBuildProjectName:
+    Description: Codebuild project name
+    Value: !Ref CodeBuildProject
+
+  CodeBuildProjectArn:
+    Description: Project arn
+    Value: !GetAtt CodeBuildProject.Arn
