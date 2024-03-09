@@ -4,7 +4,7 @@ FROM node:14
 # Set the working directory inside the container
 WORKDIR /app
 
-COPY . .
+COPY application/worker .
 
 RUN npm install
 

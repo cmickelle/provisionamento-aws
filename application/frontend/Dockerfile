@@ -12,14 +12,14 @@ WORKDIR /usr/local/app
 # have nodemon available for local dev use (file watching)
 RUN npm install -g nodemon
 
-COPY package*.json ./
+COPY application/frontend/package*.json ./
 
 RUN npm ci && \
  npm cache clean --force && \
  mv /usr/local/app/node_modules /node_modules
 
-COPY . .
-ADD ./server.js ./frontend.js
+COPY application/frontend/ .
+ADD application/frontend/server.js ./frontend.js
 
 ENV PORT 80
 EXPOSE 80
