@@ -9,15 +9,15 @@ Parameters:
   GitHubToken: 
     Type: String
     Description: Auth GitHub 
-    Default: "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"
+    Default: ""
   RepositoryECR:
     Type: String
     Description: Repository image ECR
-    Default: "881406367037.dkr.ecr.us-east-1.amazonaws.com/api"
+    Default: 881406367037.dkr.ecr.us-east-1.amazonaws.com/api
   DockerFilePath:
     Type: String
     Description: Dockerfile Path
-    Default: "application/api/Dockerfile"
+    Default: application/api/Dockerfile
 
 Resources:
   CodeBuildProject:
@@ -44,10 +44,15 @@ Resources:
             build:
               commands:
                 - echo Build start `date`
-                - docker build -t $REPOSITORY_URL_ECR:latest -f $DOCKER_FILE_PATH .
+                - docker build -t 881406367037.dkr.ecr.us-east-1.amazonaws.com/api:latest -f application/api/Dockerfile .
+                - docker build -t 881406367037.dkr.ecr.us-east-1.amazonaws.com/frontend:latest -f application/frontend/Dockerfile .
+                - docker build -t 881406367037.dkr.ecr.us-east-1.amazonaws.com/worker:latest -f application/worker/Dockerfile .
                 - echo Build end `date`
                 - echo Send image to ECR... 
-                - docker push $REPOSITORY_URL_ECR:latest
+                - docker push 881406367037.dkr.ecr.us-east-1.amazonaws.com/api:latest
+                - docker push 881406367037.dkr.ecr.us-east-1.amazonaws.com/frontend:latest
+                - docker push 881406367037.dkr.ecr.us-east-1.amazonaws.com/worker:latest
+
       Artifacts:
         Type: NO_ARTIFACTS
       Environment: 
@@ -58,9 +63,9 @@ Resources:
           - Name: $AWS_DEFAULT_REGION
             Value: !Ref AwsRegion
           - Name: $REPOSITORY_URL_ECR
-            Value: !Ref RepositoryECR
+            Value: 881406367037.dkr.ecr.us-east-1.amazonaws.com/api
           - Name: $DOCKER_FILE_PATH
-            Value: !Ref DockerFilePath
+            Value: application/api/Dockerfile
   
   CodeBuildServiceRole:
       Type: AWS::IAM::Role
